@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX, Shield, MagnetIcon, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 // --- AUDIO SYSTEM ---
 class AudioEngine {
@@ -408,15 +409,18 @@ function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, isJumpi
   ctx.save();
   ctx.translate(x, y);
 
-  // Draw Dynamic Shadow
+  // Draw Dynamic Pixel Shadow
   const distanceToGround = Math.max(0, GROUND_Y - y - 30);
   const shadowOpacity = Math.max(0.05, 0.35 - distanceToGround * 0.003);
-  const shadowWidth = Math.max(4, 14 - distanceToGround * 0.15);
+  const shadowWidth = Math.floor(Math.max(4, 14 - distanceToGround * 0.15));
   
   ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
-  ctx.beginPath();
-  ctx.ellipse(8, GROUND_Y - y, shadowWidth, shadowWidth * 0.3, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Draw blocky pseudo-ellipse
+  ctx.fillRect(8 - shadowWidth / 2, GROUND_Y - y - 1, shadowWidth, 3);
+  if (shadowWidth > 6) {
+    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y - 2, shadowWidth - 4, 1);
+    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y + 2, shadowWidth - 4, 1);
+  }
 
   if (isDead) {
     ctx.translate(8, 15);
@@ -1216,6 +1220,25 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
     ctx.fillRect(groundOffset + i * 100, GROUND_Y + 10, 40, 2);
     ctx.fillRect(groundOffset + i * 100 + 40, GROUND_Y + 25, 20, 2);
   }
+
+  // Draw Cloud Shadows on Ground
+  const shadowOpacity = 0.15 * (1 - nightFactor);
+  if (shadowOpacity > 0.01) {
+    ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
+    ctx.save();
+    for (let repeat = 0; repeat < 2; repeat++) {
+      ctx.save();
+      ctx.translate(cloudOffset + repeat * 800, 0);
+      clouds.forEach(c => {
+        ctx.beginPath();
+        // Draw an elliptical shadow directly below the cloud
+        ctx.ellipse(c.x + c.w * 0.5, GROUND_Y + 15, c.w * 0.6, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+    ctx.restore();
+  }
 }
 
 // --- GAME COMPONENT ---
@@ -1320,6 +1343,10 @@ export default function AmdvadRunner() {
       return;
     }
     if (isGameOver) {
+      resetGame();
+      setIsGameOver(false);
+      setIsPlaying(true);
+      audio.startMusic();
       return;
     }
     if (!gameState.current.isJumping) {
@@ -2178,11 +2205,13 @@ export default function AmdvadRunner() {
           </div>
           <div className="flex flex-col gap-4">
             <button 
-              onClick={(e) => { e.stopPropagation(); jump(); }}
+              onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }}
               className="animate-pulse hover:animate-none bg-orange-600 hover:bg-orange-500 text-white px-8 py-3 rounded-full font-bold text-xl uppercase tracking-wider shadow-[0_0_20px_rgba(234,88,12,0.8)] border border-orange-400 transition-all">
               Press Space or Tap to Start
             </button>
             <button 
+              onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowCustomize(true); }}
               onClick={(e) => { e.stopPropagation(); setShowCustomize(true); }}
               className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-2 rounded-full font-bold text-lg uppercase tracking-wider shadow-[0_0_15px_rgba(147,51,234,0.6)] border border-purple-400 transition-all">
               Customize Character
@@ -2191,20 +2220,27 @@ export default function AmdvadRunner() {
         </div>
       )}
 
-      {isGameOver && !showHighScores && !showCustomize && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto p-6 text-center overflow-hidden">
-          {/* Animated Background */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md z-0"></div>
-          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-600 rounded-full blur-[120px] animate-pulse"></div>
-            {score > 500 && <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-orange-500 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }}></div>}
-            {coinsCollected > 20 && <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-yellow-400 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>}
-          </div>
+      <AnimatePresence>
+        {isGameOver && !showHighScores && !showCustomize && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto p-6 text-center overflow-hidden z-20"
+          >
+            {/* Animated Background */}
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md z-0"></div>
+            <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-600 rounded-full blur-[120px] animate-pulse"></div>
+              {score > 500 && <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-orange-500 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }}></div>}
+              {coinsCollected > 20 && <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-yellow-400 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>}
+            </div>
 
-          <div className="relative z-10 flex flex-col items-center w-full max-w-sm">
-            <h2 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-400 to-red-600 mb-2 drop-shadow-2xl tracking-widest uppercase transform -skew-y-3">
-              Game Over!
-            </h2>
+            <div className="relative z-10 flex flex-col items-center w-full max-w-sm">
+              <h2 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-400 to-red-600 mb-2 drop-shadow-2xl tracking-widest uppercase transform -skew-y-3">
+                Game Over!
+              </h2>
             <p className="text-lg md:text-xl text-orange-200 mb-8 max-w-xs font-medium">
               The Amdvad traffic finally caught up to you!
             </p>
@@ -2223,7 +2259,8 @@ export default function AmdvadRunner() {
             
             <div className="flex flex-col gap-3 w-full">
               <button 
-                onClick={(e) => { e.stopPropagation(); jump(); }} 
+                onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }} 
                 className="w-full relative overflow-hidden group bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white px-6 py-4 rounded-xl font-black text-xl uppercase tracking-widest shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all hover:-translate-y-1">
                 <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-shimmer"></div>
                 Try Again
@@ -2237,11 +2274,13 @@ export default function AmdvadRunner() {
               
               <div className="flex gap-3 w-full mt-1">
                 <button 
+                  onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowHighScores(true); }}
                   onClick={(e) => { e.stopPropagation(); setShowHighScores(true); }}
                   className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider border border-white/10 transition-all backdrop-blur-sm">
                   High Scores
                 </button>
                 <button 
+                  onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowCustomize(true); }}
                   onClick={(e) => { e.stopPropagation(); setShowCustomize(true); }}
                   className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider border border-white/10 transition-all backdrop-blur-sm">
                   Customize
@@ -2249,12 +2288,20 @@ export default function AmdvadRunner() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {showHighScores && (
-        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center pointer-events-auto p-6 z-30">
-          <h2 className="text-4xl font-black text-yellow-400 mb-6 tracking-widest uppercase">High Scores</h2>
+      <AnimatePresence>
+        {showHighScores && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center pointer-events-auto p-6 z-30"
+          >
+            <h2 className="text-4xl font-black text-yellow-400 mb-6 tracking-widest uppercase">High Scores</h2>
           <div className="bg-white/10 border border-white/20 rounded-xl p-6 w-full max-w-sm mb-8 text-white font-mono text-xl flex flex-col gap-4">
             {highScoresList.length > 0 ? highScoresList.map((s, i) => (
               <div key={i} className="flex justify-between border-b border-white/10 pb-2">
@@ -2264,16 +2311,25 @@ export default function AmdvadRunner() {
             )) : <div className="text-center text-gray-400">No high scores yet!</div>}
           </div>
           <button 
+            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowHighScores(false); }}
             onClick={(e) => { e.stopPropagation(); setShowHighScores(false); }}
             className="bg-white hover:bg-gray-200 text-black px-8 py-3 rounded-full font-bold text-xl uppercase tracking-wider transition-all">
             Back
           </button>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {showCustomize && (
-        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center pointer-events-auto p-6 z-30">
-          <h2 className="text-4xl font-black text-purple-400 mb-6 tracking-widest uppercase">Customize</h2>
+      <AnimatePresence>
+        {showCustomize && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center pointer-events-auto p-6 z-30"
+          >
+            <h2 className="text-4xl font-black text-purple-400 mb-6 tracking-widest uppercase">Customize</h2>
           <div className="bg-white/10 border border-white/20 rounded-xl p-8 w-full max-w-sm mb-8 flex flex-col items-center gap-6">
             <div className="w-full">
               <p className="text-white text-lg font-medium text-center mb-4">Select Character</p>
@@ -2308,12 +2364,14 @@ export default function AmdvadRunner() {
             </div>
           </div>
           <button 
+            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowCustomize(false); }}
             onClick={(e) => { e.stopPropagation(); setShowCustomize(false); }}
             className="bg-white hover:bg-gray-200 text-black px-8 py-3 rounded-full font-bold text-xl uppercase tracking-wider transition-all">
             Done
           </button>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
