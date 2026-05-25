@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Shield, MagnetIcon, Zap } from 'lucide-react';
+import { Volume2, VolumeX, Shield, MagnetIcon, Zap, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- AUDIO SYSTEM ---
@@ -407,19 +407,19 @@ function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, isJumpi
   const isRunning = tick % 20 < 10 && !isJumping;
 
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(x, y - 4); // shift up slightly as model is taller now
 
   // Draw Dynamic Pixel Shadow
-  const distanceToGround = Math.max(0, GROUND_Y - y - 30);
+  const distanceToGround = Math.max(0, GROUND_Y - y - 30 + 4);
   const shadowOpacity = Math.max(0.05, 0.35 - distanceToGround * 0.003);
-  const shadowWidth = Math.floor(Math.max(4, 14 - distanceToGround * 0.15));
+  const shadowWidth = Math.floor(Math.max(4, 16 - distanceToGround * 0.15));
   
   ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
   // Draw blocky pseudo-ellipse
-  ctx.fillRect(8 - shadowWidth / 2, GROUND_Y - y - 1, shadowWidth, 3);
+  ctx.fillRect(8 - shadowWidth / 2, GROUND_Y - y + 4, shadowWidth, 3);
   if (shadowWidth > 6) {
-    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y - 2, shadowWidth - 4, 1);
-    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y + 2, shadowWidth - 4, 1);
+    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y + 3, shadowWidth - 4, 1);
+    ctx.fillRect(8 - shadowWidth / 2 + 2, GROUND_Y - y + 7, shadowWidth - 4, 1);
   }
 
   if (isDead) {
@@ -428,56 +428,112 @@ function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, isJumpi
     ctx.translate(-8, -15);
   }
 
-  // Head (skin)
-  ctx.fillStyle = '#A67B5B';
-  ctx.fillRect(4, 0, 8, 8);
-  // Hair
-  ctx.fillStyle = '#111';
+  const skin = '#D89E73';
+  const pants = playerModel === 'female' ? '#1D4E89' : '#3C3C3C'; 
+  const shoes = playerModel === 'female' ? '#F45B69' : '#222222'; 
+  const hair = playerModel === 'female' ? '#4A2511' : '#2C1A0F';
+
+  // Hair Back
+  ctx.fillStyle = hair;
   if (playerModel === 'female') {
-    ctx.fillRect(4, 0, 8, 3);
-    ctx.fillRect(2, 3, 3, 7); // back hair
-    ctx.fillRect(11, 2, 2, 4); // front hair
+    const ponyY = isJumping ? 2 : (isRunning ? 5 : 4);
+    ctx.fillRect(-2, ponyY, 6, 8);
+    ctx.fillRect(-4, ponyY + 2, 4, 6); 
+  }
+  
+  // Head/Face
+  ctx.fillStyle = skin;
+  ctx.fillRect(4, -2, 10, 10);
+  
+  // Features (Eyes, Blush)
+  ctx.fillStyle = '#000'; 
+  ctx.fillRect(11, 1, 2, 2); 
+  if (playerModel === 'female') {
+    ctx.fillStyle = 'rgba(255, 100, 100, 0.4)'; 
+    ctx.fillRect(9, 4, 3, 2);
   } else {
-    ctx.fillRect(4, 0, 8, 2);
-    ctx.fillRect(10, 2, 2, 2); // sideburn/flick
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(10, 5, 4, 3);
   }
 
-  // Body (shirt)
+  // Hair Front/Top
+  ctx.fillStyle = hair;
+  if (playerModel === 'female') {
+    ctx.fillRect(3, -3, 10, 4); 
+    ctx.fillRect(3, -1, 3, 7);  
+    ctx.fillRect(11, -3, 3, 3); 
+  } else {
+    ctx.fillRect(3, -3, 10, 3);
+    ctx.fillRect(2, -2, 2, 2); 
+    ctx.fillRect(5, -4, 4, 2);
+    ctx.fillRect(4, 0, 2, 4); 
+  }
+
+  // Torso / Shirt
   ctx.fillStyle = shirtColor;
-  ctx.fillRect(2, 8, 12, 12);
-  
-  // Arms
-  ctx.fillStyle = '#A67B5B';
-  ctx.fillRect(6, 10, 4, 8); 
-
-  // Pants (brown for male, maybe darker or different style, let's keep it simple)
-  ctx.fillStyle = playerModel === 'female' ? '#2A4A62' : '#5A3A22';
-
-  
-  if (isJumping) {
-    ctx.fillRect(4, 20, 4, 6);
-    ctx.fillRect(8, 18, 4, 6); 
-    // Shoes
-    ctx.fillStyle = '#222';
-    ctx.fillRect(4, 26, 6, 2);
-    ctx.fillRect(8, 24, 6, 2);
-  } else if (isRunning) {
-    ctx.fillRect(4, 20, 4, 4);
-    ctx.fillRect(8, 24, 4, 2); // Foot forward
-    ctx.fillRect(8, 20, 4, 8); // Leg straight
-    // Shoes
-    ctx.fillStyle = '#222';
-    ctx.fillRect(8, 28, 6, 2); 
-    ctx.fillRect(8, 24, 6, 2);
+  if (playerModel === 'female') {
+    ctx.fillRect(4, 8, 8, 11);
+    ctx.fillRect(5, 19, 6, 2);
   } else {
-    // Standing/Separated
-    ctx.fillRect(4, 20, 4, 8);
-    ctx.fillRect(10, 20, 4, 8);
-    // Shoes
-    ctx.fillStyle = '#222';
-    ctx.fillRect(2, 28, 6, 2);
-    ctx.fillRect(8, 28, 6, 2);
+    ctx.fillRect(3, 8, 10, 12);
   }
+
+  // Arms Back
+  ctx.fillStyle = skin;
+  if (isJumping) {
+    ctx.fillRect(5, 7, 3, 8); 
+    ctx.fillStyle = shirtColor;
+    ctx.fillRect(4, 8, 4, 4); 
+  } else if (isRunning) {
+    ctx.fillRect(7, 10, 4, 8); 
+  } else {
+    ctx.fillRect(6, 9, 3, 9);
+    ctx.fillStyle = shirtColor;
+    ctx.fillRect(5, 8, 5, 5); 
+  }
+
+  // Legs and Shoes
+  ctx.fillStyle = pants;
+  let legY = 20;
+  if (playerModel === 'female') legY = 21; // slightly higher pants start
+
+  if (isJumping) {
+    ctx.fillRect(5, legY, 6, 4);
+    ctx.fillRect(9, legY + 4, 4, 4); 
+    ctx.fillRect(3, legY - 1, 5, 6);
+    
+    ctx.fillStyle = shoes;
+    ctx.fillRect(9, 28, 6, 4); 
+    ctx.fillRect(2, 25, 4, 4); 
+  } else if (isRunning) {
+    ctx.fillRect(5, legY, 4, 5);
+    ctx.fillRect(9, legY + 4, 4, 4); 
+    ctx.fillRect(7, legY - 1, 4, 9); 
+    
+    ctx.fillStyle = shoes;
+    ctx.fillRect(9, 28, 6, 4); 
+    ctx.fillRect(6, 28, 6, 4);
+  } else {
+    if (playerModel === 'female') {
+      ctx.fillRect(5, legY, 3, 8);
+      ctx.fillRect(9, legY, 3, 8);
+    } else {
+      ctx.fillRect(4, legY, 4, 8);
+      ctx.fillRect(9, legY, 4, 8);
+    }
+    ctx.fillStyle = shoes;
+    ctx.fillRect(4, 28, 5, 4);
+    ctx.fillRect(9, 28, 5, 4);
+  }
+  
+  // Front Arm overlay
+  if (!isJumping && isRunning) {
+    ctx.fillStyle = skin;
+    ctx.fillRect(3, 9, 4, 8); 
+    ctx.fillStyle = shirtColor;
+    ctx.fillRect(2, 8, 5, 4); 
+  }
+
   ctx.restore();
 }
 
@@ -954,11 +1010,13 @@ function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.restore();
 }
 
-function drawBird(ctx: CanvasRenderingContext2D, x: number, y: number, tick: number) {
+function drawBird(ctx: CanvasRenderingContext2D, x: number, y: number, tick: number, phaseOffset: number = 0) {
   ctx.save();
-  ctx.translate(x, y);
+  const drawX = Math.round(x);
+  const drawY = Math.round(y);
+  ctx.translate(drawX, drawY);
   ctx.fillStyle = '#222';
-  const flap = Math.sin(tick * 0.2 + x) > 0;
+  const flap = Math.sin(tick * 0.2 + phaseOffset) > 0;
   if (flap) {
     ctx.fillRect(0, 0, 4, 1);
     ctx.fillRect(-2, -2, 2, 2);
@@ -971,23 +1029,25 @@ function drawBird(ctx: CanvasRenderingContext2D, x: number, y: number, tick: num
   ctx.restore();
 }
 
-function drawPedestrian(ctx: CanvasRenderingContext2D, x: number, y: number, tick: number, dir: number = 1, color: string = '#4A2511') {
+function drawPedestrian(ctx: CanvasRenderingContext2D, x: number, y: number, tick: number, dir: number = 1, color: string = '#4A2511', phaseOffset: number = 0) {
   ctx.save();
-  ctx.translate(x + (dir === -1 ? 8 : 0), y);
+  // Ensure pixel-perfect rendering to avoid subpixel jitter
+  const drawX = Math.round(x);
+  ctx.translate(drawX + (dir === -1 ? 8 : 0), Math.round(y));
   if (dir === -1) {
     ctx.scale(-1, 1);
   }
   ctx.fillStyle = color; // shadow/silhouette color
-  const walkBob = Math.sin(tick * 0.15 + x) * 2;
+  const walkBob = Math.round(Math.sin(tick * 0.15 + phaseOffset) * 2);
   
   // Head
   ctx.fillRect(2, walkBob, 4, 4);
   // Body
-  ctx.fillRect(1, 5 + walkBob, 6, 8);
+  ctx.fillRect(1, 4 + walkBob, 6, 8);
   // Legs
-  const legSwing = Math.sin(tick * 0.3 + x) * 3;
-  ctx.fillRect(2 + legSwing, 13 + walkBob, 2, 6);
-  ctx.fillRect(4 - legSwing, 13 + walkBob, 2, 6);
+  const legSwing = Math.round(Math.sin(tick * 0.15 + phaseOffset) * 3);
+  ctx.fillRect(1 + Math.max(0, legSwing), 12 + walkBob, 2, 7);
+  ctx.fillRect(5 + Math.min(0, legSwing), 12 + walkBob, 2, 7);
   
   ctx.restore();
 }
@@ -1058,7 +1118,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
   const clouds = [
     {x: 40, y: 30, w: 80}, {x: 280, y: 60, w: 120}, {x: 550, y: 40, w: 60}, {x: 750, y: 70, w: 90}
   ];
-  const cloudOffset = -(scrollX * 0.05) % 800;
+  const cloudOffset = Math.floor(-((scrollX * 0.05) + (tick * 0.2)) % 800);
   ctx.save();
   for (let repeat = 0; repeat < 2; repeat++) {
     ctx.save();
@@ -1074,7 +1134,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
     {x: 0, w: 120, h: 40}, {x: 80, w: 160, h: 55}, {x: 220, w: 110, h: 30},
     {x: 310, w: 190, h: 65}, {x: 480, w: 140, h: 45}, {x: 600, w: 200, h: 35}
   ];
-  const layer05Offset = -(scrollX * 0.1) % 800;
+  const layer05Offset = Math.floor(-((scrollX * 0.1) + (tick * 0.1)) % 800);
   ctx.save();
   for (let repeat = 0; repeat < 2; repeat++) {
     ctx.save();
@@ -1094,13 +1154,13 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
   const birds = [
     {x: 100, y: 50}, {x: 250, y: 80}, {x: 450, y: 60}, {x: 700, y: 90}
   ];
-  const birdOffset = -(scrollX * 0.15) % 800;
+  const birdOffset = Math.floor(-(scrollX * 0.15) % 800);
   ctx.save();
   for (let repeat = 0; repeat < 2; repeat++) {
     ctx.save();
     // Wrap around based on canvas width or 800 interval
     ctx.translate(birdOffset + repeat * 800, 0);
-    birds.forEach(b => drawBird(ctx, b.x, b.y, tick));
+    birds.forEach((b, idx) => drawBird(ctx, b.x, b.y, tick, idx * 10));
     ctx.restore();
   }
   ctx.restore();
@@ -1124,7 +1184,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
 
   ctx.save();
   // Loop pattern for parallax
-  const bgOffset1 = -(scrollX * 0.25) % 800;
+  const bgOffset1 = Math.floor(-(scrollX * 0.25) % 800);
   for (let repeat = 0; repeat < 2; repeat++) {
     ctx.save();
     ctx.translate(bgOffset1 + repeat * 800, 0);
@@ -1158,7 +1218,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
     {x: 680, type: 'pedestrian'}, {x: 750, w: 60, h: 10}
   ];
 
-  const bgOffset2 = -(scrollX * 0.5) % 800;
+  const bgOffset2 = Math.floor(-(scrollX * 0.5) % 800);
   ctx.save();
   for (let repeat = 0; repeat < 2; repeat++) {
     ctx.save();
@@ -1198,7 +1258,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, scrollX: number, canvasWi
     else if (screenX > 2200) screenX -= 2400;
     
     if (screenX > -100 && screenX < canvasWidth + 100) {
-      drawPedestrian(ctx, screenX, GROUND_Y - 19, tick, dir, color);
+      drawPedestrian(ctx, screenX, GROUND_Y - 19, tick, dir, color, i * 45);
     }
   }
   ctx.restore();
@@ -1276,11 +1336,23 @@ export default function AmdvadRunner() {
   const [showHighScores, setShowHighScores] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
+  const [lives, setLives] = useState(3);
   const [coinsCollected, setCoinsCollected] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(true);
   
   const [missionCompleted, setMissionCompleted] = useState(false);
   const dailyMission = useRef({ description: 'Collect 50 coins in one run', target: 50 }).current;
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    if (isPlaying && !isGameOver && score === 0) {
+      setShowTutorial(true);
+      const t = setTimeout(() => setShowTutorial(false), 5000);
+      return () => clearTimeout(t);
+    } else if (!isPlaying || isGameOver) {
+      setShowTutorial(false);
+    }
+  }, [isPlaying, isGameOver]);
 
   // Expose powerup state to React for the HUD
   const [activeEventHUD, setActiveEventHUD] = useState<{type: 'none' | 'heavy_traffic' | 'golden_hour', timer: number}>({ type: 'none', timer: 0 });
@@ -1319,6 +1391,8 @@ export default function AmdvadRunner() {
     activePowerups: { shield: false, magnetTime: 0, doubleTime: 0 },
     screenShake: 0,
     hitBlink: 0,
+    lives: 3,
+    invincibleTimer: 0,
     weather: { type: 'none' as 'none' | 'rain' | 'dust', timer: 1000, particles: [] as {x: number, y: number, vx: number, vy: number, l: number, s: number}[] },
     event: { type: 'none' as 'none' | 'heavy_traffic' | 'golden_hour', timer: 0 },
     deathTimer: 0,
@@ -1343,10 +1417,6 @@ export default function AmdvadRunner() {
       return;
     }
     if (isGameOver) {
-      resetGame();
-      setIsGameOver(false);
-      setIsPlaying(true);
-      audio.startMusic();
       return;
     }
     if (!gameState.current.isJumping) {
@@ -1379,6 +1449,8 @@ export default function AmdvadRunner() {
       activePowerups: { shield: false, magnetTime: 0, doubleTime: 0 },
       screenShake: 0,
       hitBlink: 0,
+      lives: 3,
+      invincibleTimer: 0,
       weather: { type: 'none', timer: 1000, particles: [] },
       event: { type: 'none', timer: 0 },
       deathTimer: 0,
@@ -1388,6 +1460,7 @@ export default function AmdvadRunner() {
     setMultiplierHUD(1);
     setSpeedHUD(Math.floor(config.initialSpeed * 8));
     setScore(0);
+    setLives(3);
     setCoinsCollected(0);
     setIsGameOver(false);
     setIsPlaying(true);
@@ -1397,7 +1470,7 @@ export default function AmdvadRunner() {
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.key === ' ' || e.key === 'ArrowUp') {
         e.preventDefault();
         jump();
       }
@@ -1454,12 +1527,29 @@ export default function AmdvadRunner() {
     ctx.imageSmoothingEnabled = false;
 
     let animationFrameId: number;
+    let lastTime = 0;
+    const FPS = 60;
+    const frameInterval = 1000 / FPS;
 
-    const gameLoop = () => {
+    const gameLoop = (time: number) => {
+      if (!lastTime) lastTime = time;
+      const deltaTime = time - lastTime;
+
+      if (deltaTime < frameInterval) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      lastTime = time - (deltaTime % frameInterval);
+
       const state = gameState.current;
 
       if (isPlaying && !isGameOver) {
         state.tick++;
+
+        if (state.invincibleTimer > 0) {
+          state.invincibleTimer--;
+        }
 
         if (state.deathTimer > 0) {
           state.deathTimer--;
@@ -1568,6 +1658,8 @@ export default function AmdvadRunner() {
             playerHitbox.y < obsHitbox.y + obsHitbox.h &&
             playerHitbox.y + playerHitbox.h > obsHitbox.y
           ) {
+            if (state.invincibleTimer > 0) continue;
+
             // Check shield
             if (state.activePowerups.shield) {
               state.activePowerups.shield = false;
@@ -1593,6 +1685,36 @@ export default function AmdvadRunner() {
 
             // Collision!
             if (state.deathTimer === 0) {
+              if (state.lives > 1) {
+                state.lives--;
+                setLives(state.lives);
+                state.invincibleTimer = 90;
+                state.hitBlink = 30;
+                state.screenShake = 15;
+                state.baseMultiplier = 1;
+                state.distanceStreak = 0;
+                state.coinStreak = 0;
+                if (state.speed > state.difficultyConfig.initialSpeed) {
+                  state.speed -= 1;
+                  setSpeedHUD(Math.floor(state.speed * 8));
+                }
+                triggerHaptic([50]);
+                audio.playShieldBreak();
+                for (let p = 0; p < 10; p++) {
+                  state.particles.push({
+                    x: playerHitbox.x + playerHitbox.w / 2,
+                    y: playerHitbox.y + playerHitbox.h / 2,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 2,
+                    life: 20 + Math.random() * 10,
+                    type: 'hit'
+                  });
+                }
+                continue;
+              }
+
+              state.lives = 0;
+              setLives(0);
               state.deathTimer = 60;
               state.baseMultiplier = 1;
               state.distanceStreak = 0;
@@ -1958,7 +2080,7 @@ export default function AmdvadRunner() {
 
       // Draw Coins
       state.coins.forEach(coin => {
-        drawCoin(ctx, coin.x, coin.y, state.tick, coin.tickOffset);
+        drawCoin(ctx, Math.round(coin.x), Math.round(coin.y), state.tick, coin.tickOffset);
       });
 
       // Draw Obstacles
@@ -1966,36 +2088,39 @@ export default function AmdvadRunner() {
       const nightFactor = Math.max(0, Math.sin(cyclePhase * Math.PI * 2));
 
       state.obstacles.forEach(obs => {
-        if (obs.type === 'auto') drawAuto(ctx, obs.x, obs.y, state.tick, nightFactor);
-        else if (obs.type === 'dog') drawDog(ctx, obs.x, obs.y, state.tick);
-        else if (obs.type === 'chai') drawChaiCart(ctx, obs.x, obs.y, state.tick, nightFactor);
-        else if (obs.type === 'kite') drawKite(ctx, obs.x, obs.y, state.tick);
-        else if (obs.type === 'bicycle') drawBicycle(ctx, obs.x, obs.y, state.tick);
-        else if (obs.type === 'pothole') drawPothole(ctx, obs.x, obs.y);
-        else if (obs.type === 'vendor') drawVendor(ctx, obs.x, obs.y, state.tick);
+        const ox = Math.round(obs.x);
+        const oy = Math.round(obs.y);
+        if (obs.type === 'auto') drawAuto(ctx, ox, oy, state.tick, nightFactor);
+        else if (obs.type === 'dog') drawDog(ctx, ox, oy, state.tick);
+        else if (obs.type === 'chai') drawChaiCart(ctx, ox, oy, state.tick, nightFactor);
+        else if (obs.type === 'kite') drawKite(ctx, ox, oy, state.tick);
+        else if (obs.type === 'bicycle') drawBicycle(ctx, ox, oy, state.tick);
+        else if (obs.type === 'pothole') drawPothole(ctx, ox, oy);
+        else if (obs.type === 'vendor') drawVendor(ctx, ox, oy, state.tick);
       });
 
       // Draw Powerups
       state.powerups.forEach(pu => {
-        drawPowerup(ctx, pu.x, pu.y, pu.type, state.tick, pu.tickOffset);
+        drawPowerup(ctx, Math.round(pu.x), Math.round(pu.y), pu.type, state.tick, pu.tickOffset);
       });
 
       // Draw Player (with hit blinking effect)
-      if (state.hitBlink === 0 || Math.floor(state.hitBlink / 4) % 2 === 0) {
+      const isBlinking = (state.invincibleTimer > 0 && Math.floor(state.invincibleTimer / 4) % 2 !== 0) || (state.hitBlink > 0 && Math.floor(state.hitBlink / 4) % 2 !== 0);
+      if (!isBlinking) {
         if (state.activePowerups.shield) {
           ctx.beginPath();
-          ctx.arc(60, state.playerY + 16, 20, 0, Math.PI * 2);
+          ctx.arc(60, Math.round(state.playerY) + 16, 20, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(100, 200, 255, 0.4)';
           ctx.fill();
         }
         if (state.activePowerups.magnetTime > 0) {
           ctx.beginPath();
-          ctx.arc(60, state.playerY + 16, 24 + Math.sin(state.tick * 0.2) * 4, 0, Math.PI * 2);
+          ctx.arc(60, Math.round(state.playerY) + 16, 24 + Math.sin(state.tick * 0.2) * 4, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(255, 100, 100, ${state.activePowerups.magnetTime / 600})`;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
-        drawPlayer(ctx, 50, state.playerY, state.isJumping, state.tick, shirtColor, playerModel, state.deathTimer > 0);
+        drawPlayer(ctx, 50, Math.round(state.playerY), state.isJumping, state.tick, shirtColor, playerModel, state.deathTimer > 0);
       }
 
       // Draw Weather Particles
@@ -2045,7 +2170,7 @@ export default function AmdvadRunner() {
       animationFrameId = requestAnimationFrame(gameLoop);
     };
 
-    gameLoop();
+    animationFrameId = requestAnimationFrame(gameLoop);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
@@ -2098,6 +2223,15 @@ export default function AmdvadRunner() {
           </div>
           <div className="font-mono text-2xl font-black text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] flex items-center gap-1">
             <span className="text-xl">₹</span> {coinsCollected.toString().padStart(3, '0')}
+          </div>
+          <div className="flex gap-1 ml-4 shadow-black drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+            {[...Array(3)].map((_, i) => (
+              <Heart 
+                key={i} 
+                size={24} 
+                className={i < lives ? "fill-red-500 text-red-500" : "text-white/50"} 
+              />
+            ))}
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -2181,6 +2315,26 @@ export default function AmdvadRunner() {
         </div>
       </div>
 
+      {/* Tutorial Overlay */}
+      <AnimatePresence>
+        {showTutorial && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="absolute inset-0 flex items-center justify-center top-1/3 pointer-events-none z-10"
+          >
+            <div className="bg-black/70 border border-white/20 text-white px-8 py-4 rounded-3xl backdrop-blur-md flex flex-col items-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] animate-bounce">
+              <span className="font-black text-xl uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 drop-shadow-md">Jump to dodge</span>
+              <div className="flex gap-2">
+                <span className="bg-white/20 px-3 py-1 rounded font-mono text-sm tracking-widest font-bold">SPACE</span>
+                <span className="bg-white/20 px-3 py-1 rounded font-mono text-sm tracking-widest font-bold">TAP</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {!isPlaying && !isGameOver && !showCustomize && (
         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-6 text-center pointer-events-auto">
           <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-tr from-yellow-400 to-orange-500 font-sans tracking-tight mb-4 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
@@ -2259,8 +2413,8 @@ export default function AmdvadRunner() {
             
             <div className="flex flex-col gap-3 w-full">
               <button 
-                onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }}
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }} 
+                onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); resetGame(); }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); resetGame(); }} 
                 className="w-full relative overflow-hidden group bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white px-6 py-4 rounded-xl font-black text-xl uppercase tracking-widest shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all hover:-translate-y-1">
                 <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-shimmer"></div>
                 Try Again
@@ -2276,14 +2430,8 @@ export default function AmdvadRunner() {
                 <button 
                   onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowHighScores(true); }}
                   onClick={(e) => { e.stopPropagation(); setShowHighScores(true); }}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider border border-white/10 transition-all backdrop-blur-sm">
+                  className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider border border-white/10 transition-all backdrop-blur-sm">
                   High Scores
-                </button>
-                <button 
-                  onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setShowCustomize(true); }}
-                  onClick={(e) => { e.stopPropagation(); setShowCustomize(true); }}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider border border-white/10 transition-all backdrop-blur-sm">
-                  Customize
                 </button>
               </div>
             </div>
