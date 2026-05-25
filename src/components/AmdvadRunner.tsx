@@ -1387,7 +1387,7 @@ export default function AmdvadRunner() {
     coins: [] as {x: number, y: number, w: number, h: number, tickOffset: number}[],
     powerups: [] as {x: number, y: number, type: 'shield' | 'magnet' | 'double', w: number, h: number, tickOffset: number}[],
     particles: [] as {x: number, y: number, vx: number, vy: number, life: number, type: 'coin'|'hit'|'powerup'|'shield_break'}[],
-    floatingTexts: [] as {x: number, y: number, text: string, color: string, life: number}[],
+    floatingTexts: [] as {x: number, y: number, text: string, color: string, life: number, isFixed?: boolean}[],
     activePowerups: { shield: false, magnetTime: 0, doubleTime: 0 },
     screenShake: 0,
     hitBlink: 0,
@@ -1511,7 +1511,8 @@ export default function AmdvadRunner() {
         y: LOGICAL_HEIGHT / 4,
         text: 'MISSION COMPLETE!',
         color: '#4ADE80',
-        life: 100
+        life: 100,
+        isFixed: true
       });
       triggerHaptic([100, 50, 100]);
     }
@@ -1569,7 +1570,7 @@ export default function AmdvadRunner() {
         if (state.distanceStreak > 2000) {
           state.baseMultiplier++;
           state.distanceStreak = 0;
-          state.floatingTexts.push({ x: 50, y: state.playerY - 20, text: `STREAK! MULTIPLIER UP!`, color: '#FFD700', life: 50 });
+          state.floatingTexts.push({ x: dimensions.w / 2, y: 60, text: `STREAK! MULTIPLIER UP!`, color: '#FFD700', life: 50, isFixed: true });
           triggerHaptic(50);
         }
         
@@ -1763,11 +1764,12 @@ export default function AmdvadRunner() {
                 state.score += 50;
                 audio.playWhoosh();
                 state.floatingTexts.push({
-                  x: playerHitbox.x,
-                  y: state.playerY - 30,
+                  x: dimensions.w / 2,
+                  y: 50,
                   text: '+50 NEAR MISS!',
                   color: '#38BDF8',
-                  life: 40
+                  life: 40,
+                  isFixed: true
                 });
               }
             }
@@ -1839,14 +1841,14 @@ export default function AmdvadRunner() {
           if (state.event.timer <= 0) {
             state.event.type = 'none';
             setActiveEventHUD({ type: 'none', timer: 0 });
-            state.floatingTexts.push({ x: dimensions.w / 2, y: LOGICAL_HEIGHT / 4, text: `EVENT ENDED`, color: '#FFFFFF', life: 80 });
+            state.floatingTexts.push({ x: dimensions.w / 2, y: LOGICAL_HEIGHT / 4, text: `EVENT ENDED`, color: '#FFFFFF', life: 80, isFixed: true });
           }
         } else if (Math.random() < 0.001) { // Random chance to start an event (~every 1000 ticks)
           const isTraffic = Math.random() > 0.5;
           state.event.type = isTraffic ? 'heavy_traffic' : 'golden_hour';
           state.event.timer = 600; // ~10 seconds
           setActiveEventHUD({ type: state.event.type, timer: state.event.timer });
-          state.floatingTexts.push({ x: dimensions.w / 2, y: LOGICAL_HEIGHT / 4, text: isTraffic ? `HEAVY TRAFFIC!` : `GOLDEN HOUR!`, color: isTraffic ? '#EF4444' : '#F59E0B', life: 100 });
+          state.floatingTexts.push({ x: dimensions.w / 2, y: LOGICAL_HEIGHT / 4, text: isTraffic ? `HEAVY TRAFFIC!` : `GOLDEN HOUR!`, color: isTraffic ? '#EF4444' : '#F59E0B', life: 100, isFixed: true });
           triggerHaptic([50, 50, 50, 50]);
         }
 
@@ -1888,11 +1890,12 @@ export default function AmdvadRunner() {
             }
             
             state.floatingTexts.push({
-              x: pu.x + pu.w / 2,
-              y: pu.y - 10,
+              x: dimensions.w / 2,
+              y: 70,
               text: puText,
               color: puColor,
-              life: 45
+              life: 45,
+              isFixed: true
             });
 
             for (let p = 0; p < 10; p++) {
@@ -1967,7 +1970,7 @@ export default function AmdvadRunner() {
             state.coinStreak++;
             
             if (state.coinStreak > 1 && state.coinStreak % 5 === 0) {
-              state.floatingTexts.push({ x: coin.x, y: coin.y - 20, text: `COIN STREAK x${state.coinStreak}!`, color: '#FFD700', life: 40 });
+              state.floatingTexts.push({ x: dimensions.w / 2, y: 40, text: `COIN STREAK x${state.coinStreak}!`, color: '#FFD700', life: 40, isFixed: true });
             }
             
             let currentMultiplier = state.baseMultiplier + Math.floor(state.coinStreak / 5);
@@ -1988,7 +1991,7 @@ export default function AmdvadRunner() {
       // Always update particles and visual timers (even on game over)
       for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
         const ft = state.floatingTexts[i];
-        if (!isGameOver) {
+        if (!isGameOver && !ft.isFixed) {
           ft.x -= state.speed;
         }
         ft.y -= 0.5; // Float upwards
